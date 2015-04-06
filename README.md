@@ -10,9 +10,13 @@ Download the source code and build.
 
 In your app.config or web.config in the nlog configuration section add the <extensions> element that points to the NLog.Couchbase assembly.
 
-Make sure you have a bucket (aka database name) created in couchbase with a password set. 
+Make sure you have a bucket (aka database name) created in couchbase with a password set up. 
 
-Specify in the Source attribute what's the source of the information to store in the Couuchbase bucket.
+Specify in the configuration source attribute what's the NLog source (Parameters, Properties, None = Layout) of the information to store in the Couchbase bucket. You can use the following NLog method if you intend to log your messages as JSON objects (SystemLogging class):
+
+```C#
+     logger.Log<SystemLogging>(LogLevel.Info, mySystemLoggingInstance);
+```
 
 Specify the format of  the source data, e.g., if it should be stored as JSON or Default (text).
 
