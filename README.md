@@ -12,13 +12,13 @@ In your app.config or web.config in the nlog configuration section add the <exte
 
 Make sure you have a bucket (aka database name) created in couchbase with a password set up. 
 
-Specify in the configuration source attribute what's the NLog source (Parameters, Properties, None = Layout) of the information to store in the Couchbase bucket. You can use the following NLog method if you intend to log your messages as JSON objects (SystemLogging class):
+Specify in the configuration source attribute what's the NLog source (Parameters, Properties, None = Layout) of the information to store in the Couchbase bucket. You can use the following NLog method if you intend to log your messages as JSON objects (MyBucketLog class):
 
 ```C#
-     logger.Log<SystemLogging>(LogLevel.Info, mySystemLoggingInstance);
+     logger.Log<MyBucketLog>(LogLevel.Info, myBucketLogInstance);
 ```
 
-Specify the format of  the source data, e.g., if it should be stored as JSON or Default (text).
+Specify the format that will be used to serialize the data into Couchbase bucket, e.g., if it should be stored as JSON or Default (text).
 
 Example:
 
@@ -29,7 +29,7 @@ Example:
           <add assembly="NLog.Couchbase" />
         </extensions>
         <targets>
-          <target name="test" xsi:type="Couchbase" bucket="system_logging" bucketPassword="vagrant" source="Parameters"  format="JSON">
+          <target name="test" xsi:type="Couchbase" bucket="myBucket" bucketPassword="password" source="Parameters"  format="JSON">
             <server uri="http://192.168.56.101:8091/pools" />
             <server uri="http://192.168.56.102:8091/pools" />      
           </target>
