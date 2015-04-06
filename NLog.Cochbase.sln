@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLog.Couchbase", "NLog.Couchbase\NLog.Couchbase.csproj", "{42311B80-EABC-4509-BAC8-867F0C5DB761}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLog.Couchbase.Test", "NLog.Couchbase.Test\NLog.Couchbase.Test.csproj", "{24F84B67-E192-4A63-A0D4-53B4743B55D3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{42311B80-EABC-4509-BAC8-867F0C5DB761}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42311B80-EABC-4509-BAC8-867F0C5DB761}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42311B80-EABC-4509-BAC8-867F0C5DB761}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42311B80-EABC-4509-BAC8-867F0C5DB761}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24F84B67-E192-4A63-A0D4-53B4743B55D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24F84B67-E192-4A63-A0D4-53B4743B55D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24F84B67-E192-4A63-A0D4-53B4743B55D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24F84B67-E192-4A63-A0D4-53B4743B55D3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
