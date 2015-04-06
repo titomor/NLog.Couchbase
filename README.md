@@ -13,19 +13,19 @@ Specify the format of  the source data, e.g., if it should be stored as JSON or 
 
 Example:
 
-,,,
-<nlog>
-    <extensions>
-      <add assembly="NLog.Couchbase" />
-    </extensions>
-    <targets>
-      <target name="test" xsi:type="Couchbase" bucket="system_logging" bucketPassword="vagrant" source="Parameters" format="JSON">
-        <server uri="http://192.168.56.101:8091/pools" />
-        <server uri="http://192.168.56.102:8091/pools" />      
-      </target>
-    </targets>
-    <rules>
-      <logger name="*" minLevel="Debug" appendTo="couchbase" />
-    </rules>
-  </nlog>
-,,,
+
+     
+    <nlog>
+        <extensions>
+          <add assembly="NLog.Couchbase" />
+        </extensions>
+        <targets>
+          <target name="test" xsi:type="Couchbase" bucket="system_logging" bucketPassword="vagrant" source="Parameters"  format="JSON">
+            <server uri="http://192.168.56.101:8091/pools" />
+            <server uri="http://192.168.56.102:8091/pools" />      
+          </target>
+        </targets>
+        <rules>
+          <logger name="*" minLevel="Debug" appendTo="couchbase" />
+        </rules>
+      </nlog>
