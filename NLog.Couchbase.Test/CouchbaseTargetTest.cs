@@ -63,5 +63,46 @@ namespace NLog.Couchbase.Test
             couchbaseTarget.PublicInitializeTarget();
         }
 
+
+        
+
+        //[TestMethod]
+        //public void TestInitializationKeyRenderers()
+        //{
+        //    var logger = LogManager.GetCurrentClassLogger();
+
+        //    logger.Log<MyLog>(LogLevel.Info, new MyLog
+        //    {
+        //        Date = DateTime.Now,
+        //        CorrelationUID = Guid.NewGuid().ToString(),
+        //        MethodName = "UnitTest",
+        //        OutputParams = new 
+        //        {
+        //            EchoToken = "e8d5fe78-9999-4c45-bef9-8524ea8912a0",
+        //            TimeStamp = new DateTime(2015,04,24),
+        //            Target = 0,
+        //            Version = "1.0",
+        //            Success = true,
+        //            PropertiesType = "Properties"                
+        //        },
+        //        InputParams = new 
+        //        { 
+        //            Authorization = "1af538baa9045a84c0e889f672baf83ff24",
+        //            Token = "e8d5fe78-9999-4c45-bef9-8524ea8912a0"
+        //        }
+        //    });
+
+            
+        //}
+
     }
+
+    //public class MyLog
+    //{
+    //    public DateTime Date { get; set; }
+    //    public string MethodName { get; set; }
+    //    public object InputParams { get; set; }
+    //    public object OutputParams { get;set;}
+    //    public string CorrelationUID { get; set; }
+    //}
 }

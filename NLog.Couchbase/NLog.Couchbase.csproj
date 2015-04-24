@@ -61,6 +61,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Layouts\ParameterLayoutRenderer.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="CouchbaseTarget.cs" />
     <Compile Include="KeyAlreadyExistsException.cs" />
