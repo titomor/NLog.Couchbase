@@ -227,11 +227,23 @@ namespace NLog.Couchbase
                 {
                     AddToQueue(key, logEvent.Parameters);
                 }
-                else
+                else if(DocumentSource == DocumentSource.Parameters)
                 {
                     AddToQueue(key, hasParameters && DocumentSource == DocumentSource.Parameters ? logEvent.Parameters[0] : renderedValue);
                 }
-             
+                else if (DocumentSource == DocumentSource.All)
+                {
+                    AddToQueue(key, new {
+                                    LoggerName = logEvent.LoggerName,
+                                    Level = logEvent.Level,
+                                    FormattedMessage = logEvent.FormattedMessage,
+                                    Parameters = logEvent.Parameters,
+                                    Properties = logEvent.Properties,                                    
+                                    Exception = logEvent.Exception,
+                                    TimeStamp = logEvent.TimeStamp,
+                                    StackTrace = logEvent.StackTrace != null? logEvent.StackTrace.ToString() : null
+                                });
+                }                             
             }
             catch (Exception ex)
             {

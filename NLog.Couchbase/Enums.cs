@@ -10,7 +10,8 @@ namespace OB.Log.Couchbase
     {
         None,
         Properties,
-        Parameters
+        Parameters,
+        All
     }
 
     public enum DocumentFormat
