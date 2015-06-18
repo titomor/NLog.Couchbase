@@ -13,7 +13,19 @@ In your app.config or web.config in the nlog configuration section add the <exte
 
 Make sure you have a bucket (aka database name) created in couchbase with a password set up. 
 
-Specify in the configuration source attribute what's the NLog source for the document (Parameters, Properties, None = Layout) to store in the Couchbase bucket. You can use the following NLog method if you intend to log your messages as JSON objects (MyBucketLog class):
+Specify in the configuration source attribute what's the NLog source for the document (<b><i>Parameters, Properties, All, None = Layout</i></b>) to store in the Couchbase bucket. If Parameters is used for the DocumentSource, the LogEventInfo.Parameters is used to create a JSON object that is stored in Couchbase. If Properties is used instead, the LogEventInfo.Properties dictionary is used. If All is used then , the entire LogEventInfo object is converted to Json and stored in the couchbase bucket.
+
+So you have:
+
+
+
+
+     Parameters    -> LogEventInfo.Parameters
+     Properties    -> LogEventInfo.Properties
+     All           -> LogEventInfo
+     None          -> LogEventInfo.FormattedMessage
+
+You can use the following NLog method if you intend to log your messages as JSON objects (MyBucketLog class):
 
 ```C#
      logger.Log<MyBucketLog>(LogLevel.Info, myBucketLogInstance);
