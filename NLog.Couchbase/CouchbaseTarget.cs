@@ -237,7 +237,7 @@ namespace NLog.Couchbase
                     {
                         LoggerName = logEvent.LoggerName,
                         Level = logEvent.Level,
-                        FormattedMessage = logEvent.FormattedMessage,
+                        Message = renderedValue,
                         Parameters = logEvent.Parameters,
                         Properties = logEvent.Properties,
                         Exception = logEvent.Exception,
