@@ -227,23 +227,28 @@ namespace NLog.Couchbase
                 {
                     AddToQueue(key, logEvent.Parameters);
                 }
-                else if(DocumentSource == DocumentSource.Parameters)
+                else if(DocumentSource == DocumentSource.Parameters && hasParameters)
                 {
-                    AddToQueue(key, hasParameters && DocumentSource == DocumentSource.Parameters ? logEvent.Parameters[0] : renderedValue);
+                    AddToQueue(key, logEvent.Parameters[0]);
                 }
                 else if (DocumentSource == DocumentSource.All)
                 {
-                    AddToQueue(key, new {
-                                    LoggerName = logEvent.LoggerName,
-                                    Level = logEvent.Level,
-                                    FormattedMessage = logEvent.FormattedMessage,
-                                    Parameters = logEvent.Parameters,
-                                    Properties = logEvent.Properties,                                    
-                                    Exception = logEvent.Exception,
-                                    TimeStamp = logEvent.TimeStamp,
-                                    StackTrace = logEvent.StackTrace != null? logEvent.StackTrace.ToString() : null
-                                });
-                }                             
+                    AddToQueue(key, new
+                    {
+                        LoggerName = logEvent.LoggerName,
+                        Level = logEvent.Level,
+                        FormattedMessage = logEvent.FormattedMessage,
+                        Parameters = logEvent.Parameters,
+                        Properties = logEvent.Properties,
+                        Exception = logEvent.Exception,
+                        TimeStamp = logEvent.TimeStamp,
+                        StackTrace = logEvent.StackTrace != null ? logEvent.StackTrace.ToString() : null
+                    });
+                }
+                else
+                {
+                    AddToQueue(key, hasParameters && DocumentSource == DocumentSource.Parameters ? logEvent.Parameters[0] : renderedValue);
+                }        
             }
             catch (Exception ex)
             {
