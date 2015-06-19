@@ -48,7 +48,10 @@ namespace NLog.Couchbase
             FlushInterval = TimeSpan.FromSeconds(12);
             _objectsToPersist = new Queue<Tuple<string, object>>(50000);
             _flushBackgroundWorker = new Timer(new TimerCallback(StoreAll), _objectsToPersist, (int)FlushInterval.TotalMilliseconds, Timeout.Infinite);
-            Servers = new List<Server>();            
+            Servers = new List<Server>();
+            Mappings = new List<Properties>();
+            _flatExcludes = new List<Exclude>();
+            _flatIncludes = new List<Include>();
         }
 
         #region Fields
@@ -112,6 +115,18 @@ namespace NLog.Couchbase
         /// </summary>
         public TimeSpan? DocumentExpiration { get; set; }
 
+        private List<Exclude> _flatExcludes;
+        private List<Include> _flatIncludes;
+        
+
+        /// <summary>
+        /// Array of Properties to exclude/include from serialization.
+        /// </summary>
+        [ArrayParameter(typeof(Properties), "mappings")]
+        public IList<Properties> Mappings { get; set; }
+
+      
+        
         #endregion
       
         /// <summary>
@@ -151,6 +166,22 @@ namespace NLog.Couchbase
                 _couchbaseClient.NodeFailed += OnCouchbaseClient_NodeFailed;
             }
 
+            if (Mappings != null && Mappings.Count > 0)
+            {              
+                _flatIncludes = new List<Include>();
+                _flatExcludes = new List<Exclude>();
+                foreach (var propertiesList in this.Mappings)
+                {
+                    foreach (var property in propertiesList.Excludes)
+                    {
+                        _flatExcludes.Add(property);
+                    }
+                    foreach(var property in propertiesList.Includes)
+                    {
+                        _flatIncludes.Add(property);
+                    }
+                }
+            }
         }
 
       
@@ -221,7 +252,14 @@ namespace NLog.Couchbase
            
                 if (DocumentSource == DocumentSource.Properties && hasProperties)
                 {
-                    AddToQueue(key, logEvent.Properties);
+                    var props = logEvent.Properties;
+                    if (_flatExcludes != null && _flatExcludes.Any())
+                    {
+                        props = logEvent.Properties.Where(x => !_flatExcludes.Any(y=> object.Equals(x.Key, y.Name)
+                            && y.Path == ObjectType.Properties)).ToDictionary(x => x.Key, x => x.Value);
+                    }
+
+                    AddToQueue(key, props);
                 }
                 else if (DocumentSource == DocumentSource.Parameters && hasMultipleParameters)
                 {
@@ -233,17 +271,9 @@ namespace NLog.Couchbase
                 }
                 else if (DocumentSource == DocumentSource.All)
                 {
-                    AddToQueue(key, new
-                    {
-                        LoggerName = logEvent.LoggerName,
-                        Level = logEvent.Level,
-                        Message = renderedValue,
-                        Parameters = logEvent.Parameters,
-                        Properties = logEvent.Properties,
-                        Exception = logEvent.Exception,
-                        TimeStamp = logEvent.TimeStamp,
-                        StackTrace = logEvent.StackTrace != null ? logEvent.StackTrace.ToString() : null
-                    });
+                    var obj = Filter(logEvent);
+                   
+                    AddToQueue(key, obj);
                 }
                 else
                 {
@@ -385,8 +415,61 @@ namespace NLog.Couchbase
         protected override void FlushAsync(AsyncContinuation asyncContinuation)
         {
             StoreAll(asyncContinuation);            
-        }        
-          
+        }
+
+
+        private IDictionary<object, object> Filter(IDictionary<object, object> properties, List<string> toExclude)
+        {
+            if (toExclude == null || toExclude.Count == 0)
+                return properties;
+
+            var newProps = new Dictionary<object, object>();
+            foreach (var property in properties)
+            {
+                if (!(property.Key is string) || !toExclude.Any(x=> x.Equals((string)(property.Key), StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    newProps.Add(property.Key, property.Value);
+                }
+            }
+            return newProps;
+        }
+
+        private IDictionary<object, object> Filter(LogEventInfo logEvent)
+        {
+            Dictionary<object, object> newObj = new Dictionary<object, object>();
+            var classProps = _flatExcludes.Where(x => x.Path == ObjectType.LogEventInfo).Select(x => x.Name).ToList();
+
+            if (!classProps.Any(name => name.Equals("loggerName", StringComparison.InvariantCultureIgnoreCase)))
+                newObj.Add("loggerName", logEvent.LoggerName);
+
+            if (!classProps.Any(name => name.Equals("level", StringComparison.InvariantCultureIgnoreCase)))
+                newObj.Add("level", logEvent.Level);
+
+            if (!classProps.Any(name => name.Equals("message", StringComparison.InvariantCultureIgnoreCase)))
+                newObj.Add("message", logEvent.Message);
+
+            if (!classProps.Any(name => name.Equals("parameters", StringComparison.InvariantCultureIgnoreCase)))
+                newObj.Add("parameters", logEvent.Parameters);
+
+            if (!classProps.Any(name => name.Equals("properties", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                var filteredProps = Filter(logEvent.Properties, _flatExcludes.Where(x => x.Path == ObjectType.Properties).Select(x => x.Name).ToList());
+                newObj.Add("properties", filteredProps);
+            }
+
+            if (logEvent.Exception != null && !classProps.Any(name => name.Equals("exception", StringComparison.InvariantCultureIgnoreCase)))
+                newObj.Add("exception", logEvent.Exception);
+
+            if (!classProps.Any(name => name.Equals("timeStamp", StringComparison.InvariantCultureIgnoreCase)))
+                newObj.Add("timeStamp", logEvent.TimeStamp);
+
+            if (logEvent.StackTrace != null && !classProps.Any(name => name.Equals("stackTrace", StringComparison.InvariantCultureIgnoreCase)))
+                newObj.Add("stackTrace", logEvent.StackTrace.ToString());
+
+            return newObj;
+        }
+
+  
 
         protected override void Dispose(bool disposing)
         {            
