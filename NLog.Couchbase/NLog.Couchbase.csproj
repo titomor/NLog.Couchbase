@@ -62,7 +62,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Layouts\ParameterLayoutRenderer.cs" />
-    <Compile Include="Properties.cs" />
+    <Compile Include="Properties.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Server.cs" />
     <Compile Include="CouchbaseTarget.cs" />
     <Compile Include="KeyAlreadyExistsException.cs" />
