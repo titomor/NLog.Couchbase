@@ -23,22 +23,25 @@ namespace NLog.Couchbase
     
     public class Exclude
     {
-        public ObjectType Path { get; set; }
+        public ContextType Context { get; set; }
         public string Name { get; set; }
     }
     
     public class Include
     {
-        public ObjectType PropertyType { get;set; }
+        public ContextType Context { get;set; }
         public string Name { get; set; }
-        public string MapTo { get; set; }
+        public string To { get; set; }
     }
 
-    public enum ObjectType
+    public enum ContextType
     {
-        LogEventInfo = 0,
-        Properties = 1,
-        Parameters = 2 //NOT IMPLEMENTED
+        EventInfo = 0,
+        Properties = 1,       
+        MDC = 3,
+        GDC = 4,
+        Parameters = 5, //NOT IMPLEMENTED
+        Layout = 6
     }
 
 }

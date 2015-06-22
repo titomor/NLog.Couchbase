@@ -52,6 +52,7 @@ namespace NLog.Couchbase
             Mappings = new List<Properties>();
             _flatExcludes = new List<Exclude>();
             _flatIncludes = new List<Include>();
+            _flatIncludeLayouts = new List<Layout>();
         }
 
         #region Fields
@@ -117,6 +118,7 @@ namespace NLog.Couchbase
 
         private List<Exclude> _flatExcludes;
         private List<Include> _flatIncludes;
+        private List<Layout> _flatIncludeLayouts;
         
 
         /// <summary>
@@ -172,13 +174,17 @@ namespace NLog.Couchbase
                 _flatExcludes = new List<Exclude>();
                 foreach (var propertiesList in this.Mappings)
                 {
-                    foreach (var property in propertiesList.Excludes)
+                    foreach (var exclude in propertiesList.Excludes)
                     {
-                        _flatExcludes.Add(property);
+                        _flatExcludes.Add(exclude);
                     }
-                    foreach(var property in propertiesList.Includes)
+                    foreach(var include in propertiesList.Includes)
                     {
-                        _flatIncludes.Add(property);
+                        _flatIncludes.Add(include);
+                        if (include.Context == ContextType.Layout)
+                        {
+                            _flatIncludeLayouts.Add(Layout.FromString(include.Name));
+                        }
                     }
                 }
             }
@@ -253,11 +259,14 @@ namespace NLog.Couchbase
                 if (DocumentSource == DocumentSource.Properties && hasProperties)
                 {
                     var props = logEvent.Properties;
+                    
                     if (_flatExcludes != null && _flatExcludes.Any())
                     {
-                        props = logEvent.Properties.Where(x => !_flatExcludes.Any(y=> object.Equals(x.Key, y.Name)
-                            && y.Path == ObjectType.Properties)).ToDictionary(x => x.Key, x => x.Value);
+                        props = props.Where(x => !_flatExcludes.Any(y=> object.Equals(x.Key, y.Name)
+                            && y.Context == ContextType.Properties)).ToDictionary(x => x.Key, x => x.Value);
                     }
+
+                    props = MapIncludes(props, logEvent);
 
                     AddToQueue(key, props);
                 }
@@ -271,7 +280,9 @@ namespace NLog.Couchbase
                 }
                 else if (DocumentSource == DocumentSource.All)
                 {
-                    var obj = Filter(logEvent);
+                    IDictionary<object, object> obj = new Dictionary<object, object>();
+                    obj = MapIncludes(obj, logEvent);                    
+                    obj = Filter(obj, logEvent);
                    
                     AddToQueue(key, obj);
                 }
@@ -434,37 +445,91 @@ namespace NLog.Couchbase
             return newProps;
         }
 
-        private IDictionary<object, object> Filter(LogEventInfo logEvent)
+        private IDictionary<object, object> MapIncludes(IDictionary<object, object> newObj, LogEventInfo logEvent)
         {
-            Dictionary<object, object> newObj = new Dictionary<object, object>();
-            var classProps = _flatExcludes.Where(x => x.Path == ObjectType.LogEventInfo).Select(x => x.Name).ToList();
+            var eventInfoPropsInc = _flatIncludes.Where(x => x.Context == ContextType.GDC || x.Context == ContextType.MDC).ToList();
 
-            if (!classProps.Any(name => name.Equals("loggerName", StringComparison.InvariantCultureIgnoreCase)))
+            foreach (var include in eventInfoPropsInc)
+            {
+                if (include.Context == ContextType.GDC)
+                {
+                    newObj[string.IsNullOrEmpty(include.To) ? include.Name : include.To] = GlobalDiagnosticsContext.Get(include.Name);
+                }
+                else if (include.Context == ContextType.MDC)
+                {
+                    newObj[string.IsNullOrEmpty(include.To) ? include.Name : include.To] = MappedDiagnosticsContext.Get(include.Name);
+                }
+                else if (include.Context == ContextType.Layout)
+                {
+                    Layout customLayout = new NLog.Layouts.SimpleLayout(include.Name);
+                    string value = customLayout.Render(logEvent);
+                    newObj[string.IsNullOrEmpty(include.To) ? include.Name : include.To] = value;
+                }
+                else if (include.Context == ContextType.EventInfo)
+                {
+                    if (include.Name.Equals("loggerName", StringComparison.InvariantCultureIgnoreCase))
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] = logEvent.LoggerName;
+
+                    if (include.Name.Equals("level", StringComparison.InvariantCultureIgnoreCase))
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] =  logEvent.Level;
+
+                    if (include.Name.Equals("message", StringComparison.InvariantCultureIgnoreCase))
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] = logEvent.Message;
+
+                    if (include.Name.Equals("parameters", StringComparison.InvariantCultureIgnoreCase))
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] = logEvent.Parameters;
+
+                    if (include.Name.Equals("properties", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        var filteredProps = Filter(logEvent.Properties, _flatExcludes.Where(x => x.Context == ContextType.Properties).Select(x => x.Name).ToList());
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] = filteredProps;
+                    }
+
+                    if (logEvent.Exception != null && include.Name.Equals("exception", StringComparison.InvariantCultureIgnoreCase))
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] = logEvent.Exception;
+
+                    if (include.Name.Equals("timeStamp", StringComparison.InvariantCultureIgnoreCase))
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] = logEvent.TimeStamp;
+
+                    if (logEvent.StackTrace != null && include.Name.Equals("stackTrace", StringComparison.InvariantCultureIgnoreCase))
+                        newObj[string.IsNullOrWhiteSpace(include.To) ? include.Name : include.To] = logEvent.StackTrace.ToString();                   
+                }
+            }
+            return newObj;
+        }
+
+        private IDictionary<object, object> Filter(IDictionary<object,object> newObj, LogEventInfo logEvent)
+        {
+            var eventInfoProps = _flatExcludes.Where(x => x.Context == ContextType.EventInfo).Select(x => x.Name).ToList();
+        
+            if (!eventInfoProps.Any(name => name.Equals("loggerName", StringComparison.InvariantCultureIgnoreCase)))
                 newObj.Add("loggerName", logEvent.LoggerName);
 
-            if (!classProps.Any(name => name.Equals("level", StringComparison.InvariantCultureIgnoreCase)))
+            if (!eventInfoProps.Any(name => name.Equals("level", StringComparison.InvariantCultureIgnoreCase)))
                 newObj.Add("level", logEvent.Level);
 
-            if (!classProps.Any(name => name.Equals("message", StringComparison.InvariantCultureIgnoreCase)))
+            if (!eventInfoProps.Any(name => name.Equals("message", StringComparison.InvariantCultureIgnoreCase)))
                 newObj.Add("message", logEvent.Message);
 
-            if (!classProps.Any(name => name.Equals("parameters", StringComparison.InvariantCultureIgnoreCase)))
+            if (!eventInfoProps.Any(name => name.Equals("parameters", StringComparison.InvariantCultureIgnoreCase)))
                 newObj.Add("parameters", logEvent.Parameters);
 
-            if (!classProps.Any(name => name.Equals("properties", StringComparison.InvariantCultureIgnoreCase)))
+            if (!eventInfoProps.Any(name => name.Equals("properties", StringComparison.InvariantCultureIgnoreCase)))
             {
-                var filteredProps = Filter(logEvent.Properties, _flatExcludes.Where(x => x.Path == ObjectType.Properties).Select(x => x.Name).ToList());
+                var filteredProps = Filter(logEvent.Properties, _flatExcludes.Where(x => x.Context == ContextType.Properties).Select(x => x.Name).ToList());
                 newObj.Add("properties", filteredProps);
             }
 
-            if (logEvent.Exception != null && !classProps.Any(name => name.Equals("exception", StringComparison.InvariantCultureIgnoreCase)))
+            if (logEvent.Exception != null && !eventInfoProps.Any(name => name.Equals("exception", StringComparison.InvariantCultureIgnoreCase)))
                 newObj.Add("exception", logEvent.Exception);
 
-            if (!classProps.Any(name => name.Equals("timeStamp", StringComparison.InvariantCultureIgnoreCase)))
+            if (!eventInfoProps.Any(name => name.Equals("timeStamp", StringComparison.InvariantCultureIgnoreCase)))
                 newObj.Add("timeStamp", logEvent.TimeStamp);
 
-            if (logEvent.StackTrace != null && !classProps.Any(name => name.Equals("stackTrace", StringComparison.InvariantCultureIgnoreCase)))
+            if (logEvent.StackTrace != null && !eventInfoProps.Any(name => name.Equals("stackTrace", StringComparison.InvariantCultureIgnoreCase)))
                 newObj.Add("stackTrace", logEvent.StackTrace.ToString());
+
+
 
             return newObj;
         }
