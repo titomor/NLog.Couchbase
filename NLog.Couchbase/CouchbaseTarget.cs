@@ -446,10 +446,8 @@ namespace NLog.Couchbase
         }
 
         private IDictionary<object, object> MapIncludes(IDictionary<object, object> newObj, LogEventInfo logEvent)
-        {
-            var eventInfoPropsInc = _flatIncludes.Where(x => x.Context == ContextType.GDC || x.Context == ContextType.MDC).ToList();
-
-            foreach (var include in eventInfoPropsInc)
+        {            
+            foreach (var include in _flatIncludes)
             {
                 if (include.Context == ContextType.GDC)
                 {
