@@ -254,6 +254,7 @@ namespace NLog.Couchbase
 
                 bool hasParameters = logEvent.Parameters != null && logEvent.Parameters.Length > 0;
 
+                
                 bool hasMultipleParameters = logEvent.Parameters != null && logEvent.Parameters.Length > 1;
            
                 if (DocumentSource == DocumentSource.Properties && hasProperties)
@@ -428,7 +429,13 @@ namespace NLog.Couchbase
             StoreAll(asyncContinuation);            
         }
 
-
+        /// <summary>
+        /// Implements the exlude mappings config element.
+        /// Filters the given dictionary of properties with the property names to exclude returning a new object.
+        /// </summary>
+        /// <param name="properties">The reference Dictionary with the properties to filter.</param>
+        /// <param name="toExclude">The list of property names to filter.</param>
+        /// <returns>A new dictionary with the filtered properties</returns>
         private IDictionary<object, object> Filter(IDictionary<object, object> properties, List<string> toExclude)
         {
             if (toExclude == null || toExclude.Count == 0)
@@ -445,6 +452,13 @@ namespace NLog.Couchbase
             return newProps;
         }
 
+        /// <summary>
+        /// Processes the Includes in the Mappings config element.
+        /// Maps include properties to different names and returns the modified Dictionary (same reference as the given one).
+        /// </summary>
+        /// <param name="newObj"></param>
+        /// <param name="logEvent">Used for context=EventInfo.</param>
+        /// <returns></returns>
         private IDictionary<object, object> MapIncludes(IDictionary<object, object> newObj, LogEventInfo logEvent)
         {            
             foreach (var include in _flatIncludes)
